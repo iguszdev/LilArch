@@ -2,7 +2,7 @@
 
 **lekki. szybki. słodki.** 🐧
 
-LilArch to maleńka dystrybucja oparta na Arch Linuksie, zbudowana na [archiso](https://wiki.archlinux.org/title/Archiso). Wgrywasz ISO, wpisujesz `LilInstall` i po kilku minutach masz szybki, kolorowy pulpit i3, który zjada tylko tyle zasobów, ile naprawdę potrzebuje.
+**LilArch to gotowy do pobrania system operacyjny (Linux) w pliku ISO.** Jest oparty na Arch Linuksie, działa szybko nawet na starych komputerach i ma ładny, kolorowy pulpit i3. Nagrywasz ISO na pendrive, uruchamiasz komputer z pendrive'a i możesz system od razu wypróbować albo zainstalować na dysku jednym poleceniem: `LilInstall`.
 
 ![Arch Linux](https://img.shields.io/badge/based%20on-Arch%20Linux-1793d1?logo=arch-linux&logoColor=white)
 ![i3wm](https://img.shields.io/badge/desktop-i3wm-ff6ec7)
@@ -11,81 +11,48 @@ LilArch to maleńka dystrybucja oparta na Arch Linuksie, zbudowana na [archiso](
 
 > LilArch jest projektem hobbystycznym i nie jest oficjalną dystrybucją Arch Linux.
 
-## 🇬🇧 In English
+## ❓ Co to jest?
 
-**LilArch** is a lightweight, minimal, Arch Linux based distro with a pretty pre-configured **i3 window manager** desktop, built with **archiso**. It ships a simple text installer (`LilInstall`) that supports **BIOS and UEFI**, installs **offline**, and offers i3, XFCE, Openbox, Sway or a terminal-only setup. Low RAM usage thanks to zram, `noatime` and a minimal package set. Build the whole ISO with a single script: `bash lilarch.sh`.
+LilArch to **dystrybucja Linuksa**, czyli kompletny system operacyjny, taki jak Windows, tylko darmowy i otwarty. Plik `.iso` w tym repozytorium to obraz, z którego możesz:
 
----
+- **uruchomić system bez instalacji** (tryb live, nic nie zmienia się na dysku),
+- **zainstalować go na komputerze** (uwaga: instalator kasuje wybrany dysk).
 
-## ✨ Najważniejsze cechy
+Dla kogo: dla osób, które chcą lekki system na starszy komputer, lubią klawiaturowe pulpity (i3) albo chcą zacząć przygodę z Archem bez ręcznej instalacji.
 
-- 🪶 **Lekki**: minimalna baza, zram zamiast swapu na dysku, `noatime`, cotygodniowy TRIM i szybki start GRUB-a.
-- 🍬 **Ładny od pierwszego uruchomienia**: kafelkowe i3 z odstępami, kolorowe obramowania, pasek i3status z emoji, tapeta `LILARCH.png`, JetBrains Mono, fastfetch na starcie.
-- 📦 **Instalacja offline**: system i środowisko i3 są w repozytorium na ISO, więc nie potrzebujesz internetu.
-- 🧰 **Prosty instalator `LilInstall`**: tekstowy, po polsku, obsługuje **BIOS i UEFI**.
-- 🖥️ **Wybór środowiska**: i3 (domyślnie), sam terminal, XFCE, Openbox lub Sway.
-- 📶 **Wi-Fi bez bólu głowy**: `iwd` plus komenda `lilwifi`.
-- 🛠️ **Budowanie jednym skryptem**: cały ISO powstaje z jednego pliku `lilarch.sh`.
+## ✨ Co dostajesz
 
----
+- 🪶 **Lekki system**: minimalna baza, zram zamiast swapu na dysku, `noatime`, szybki start.
+- 🍬 **Ładny pulpit i3**: kafelkowe okna, kolorowe obramowania, pasek z zegarem, RAM, CPU i Wi-Fi, tapeta LilArch, czcionka JetBrains Mono.
+- 🧰 **Instalator `LilInstall`**: tekstowy, po polsku, **BIOS i UEFI**.
+- 📦 **Instalacja offline**: nie potrzebujesz internetu, żeby zainstalować system z i3.
+- 🖥️ **Wybór środowiska**: i3 (domyślnie), sam terminal, XFCE, Openbox lub Sway (te trzy ostatnie wymagają internetu).
+- 📶 **Wi-Fi**: komenda `lilwifi`.
 
-## 🚀 Szybki start
+## 💾 Pobieranie
 
-### 1. Zbuduj ISO
+Pobierz najnowszy plik `lilarch-*.iso` z zakładki **[Releases](../../releases)**.
 
-Potrzebujesz systemu **Arch Linux** (lub pochodnego z `pacman`), dostępu do `sudo` i internetu na czas budowania.
+## 🔥 Jak uruchomić
 
-```bash
-git clone https://github.com/<twoj-login>/lilarch.git
-cd lilarch
+### 1. Nagraj ISO na pendrive
 
-# (opcjonalnie) wrzuć swoją tapetę obok skryptu
-# cp ~/Pobrane/LILARCH.png .
+- **Windows:** [Rufus](https://rufus.ie) lub [balenaEtcher](https://etcher.balena.io), tryb **DD** jeśli Rufus zapyta.
+- **Linux:** `sudo dd if=lilarch-*.iso of=/dev/sdX bs=4M status=progress oflag=sync` (zamień `/dev/sdX` na pendrive, uważaj na wybór urządzenia).
+- **Maszyna wirtualna:** wskaż ISO jako płytę w VirtualBox, VMware lub QEMU.
 
-bash lilarch.sh 2>&1 | tee ~/lilarch.log
-```
+### 2. Uruchom komputer z pendrive'a
 
-Skrypt sam doinstaluje `archiso` i `imagemagick`, pobierze pakiety do repozytorium offline i zbuduje obraz. Gotowe ISO znajdziesz w:
+Wejdź w menu startowe (zwykle `F12`, `F11`, `Esc` lub `F2`) i wybierz pendrive. System uruchomi się w trybie live i zaloguje automatycznie.
 
-```
-~/lilarch-build/out/
-```
-
-Jeśli nie ma pliku `LILARCH.png`, skrypt wygeneruje zastępczą tapetę z różowo-niebieskim gradientem.
-
-### 2. Przetestuj w maszynie wirtualnej
+### 3. Wypróbuj albo zainstaluj
 
 ```bash
-qemu-img create -f qcow2 test.img 8G
-qemu-system-x86_64 -m 2G -enable-kvm \
-  -cdrom ~/lilarch-build/out/lilarch-*.iso -hda test.img -boot d
+startx        # uruchamia pulpit i3 (tryb live)
+LilInstall    # instaluje system na dysku
 ```
 
-Po instalacji uruchom system **bez** `-cdrom`:
-
-```bash
-qemu-system-x86_64 -m 2G -enable-kvm -hda test.img
-```
-
-### 3. Zainstaluj na dysk
-
-1. Uruchom komputer z pendrive'a lub ISO.
-2. Zalogujesz się automatycznie na roota.
-3. Wpisz:
-
-```bash
-LilInstall
-```
-
-Instalator zapyta o:
-
-- dysk docelowy (**uwaga: zawartość dysku zostanie usunięta**),
-- nazwę komputera,
-- nazwę użytkownika,
-- strefę czasową,
-- układ klawiatury,
-- hasło (to samo dla użytkownika i roota),
-- środowisko graficzne.
+Instalator zapyta o dysk, nazwę komputera, użytkownika, strefę czasową, klawiaturę, hasło i środowisko:
 
 | # | Środowisko | Internet |
 |---|------------|----------|
@@ -95,91 +62,43 @@ Instalator zapyta o:
 | 4 | Openbox | tak |
 | 5 | Sway (Wayland) | tak |
 
-Po komunikacie „Gotowe!" wyjmij nośnik i wpisz `reboot`.
+Po komunikacie „Gotowe!" wyjmij pendrive i wpisz `reboot`.
 
----
-
-## 🎨 Pulpit i3
-
-Po zalogowaniu wpisz `startx`.
+## 🎨 Skróty w i3
 
 | Skrót | Akcja |
 |-------|-------|
-| `Super + Enter` | terminal (xterm) |
-| `Super + D` | menu aplikacji (dmenu) |
+| `Super + Enter` | terminal |
+| `Super + D` | menu aplikacji |
 | `Super + Q` | zamknij okno |
 | `Super + H/J/K/L` | przełączanie fokusu |
-| `Super + Shift + H/J/K/L` | przesuwanie okien |
-| `Super + B` / `Super + V` | podział poziomy / pionowy |
 | `Super + F` | pełny ekran |
-| `Super + Shift + Spacja` | tryb pływający |
-| `Super + R` | zmiana rozmiaru okna |
 | `Super + 1…5` | pulpity |
-| `Super + Shift + 1…5` | przenieś okno na pulpit |
 | `Super + Shift + R` | przeładuj i3 |
 | `Super + Shift + E` | wyloguj |
 | `Super + Shift + B` | restart |
 | `Super + Shift + P` | wyłącz komputer |
 
----
+## 🛠️ Zbuduj ISO samodzielnie (opcjonalnie)
 
-## 📶 Wi-Fi
+Potrzebujesz Arch Linuksa, `sudo` i internetu:
 
 ```bash
-lilwifi
+bash lilarch.sh 2>&1 | tee ~/lilarch.log
 ```
 
-Skrypt przeskanuje sieci, pokaże listę i zapyta o SSID. Możesz też użyć `iwctl` bezpośrednio.
-
----
-
-## 📁 Struktura
-
-```
-lilarch/
-├── lilarch.sh      # skrypt budujący ISO (zawiera LilInstall, rice i konfigurację)
-├── LILARCH.png     # (opcjonalnie) tapeta
-└── README.md
-```
-
-W zbudowanym systemie:
-
-| Ścieżka | Zawartość |
-|---------|-----------|
-| `/usr/local/bin/LilInstall` | instalator |
-| `/usr/local/bin/lilwifi` | pomocnik Wi-Fi |
-| `/usr/share/lilarch/rice/` | konfiguracja i3, i3status, picom, xterm |
-| `/opt/lilrepo/` | repozytorium offline z pakietami |
-
----
-
-## 🛠️ Dostosowanie
-
-- **Pakiety**: edytuj zmienne `CORE` i `I3` na początku `lilarch.sh`.
-- **Kolory i wygląd**: sekcja „RICE i3" w skrypcie (`.Xresources`, `i3/config`, `i3status/config`, `picom.conf`).
-- **Tapeta**: wrzuć `LILARCH.png` obok skryptu przed budowaniem.
-- **Nazwa i branding**: `profiledef.sh` oraz teksty motd w skrypcie.
-
----
+Gotowe ISO pojawi się w `~/lilarch-build/out/`. Jeśli obok skryptu położysz `LILARCH.png`, zostanie użyte jako tapeta.
 
 ## 🐞 Problemy
 
-- **Budowanie się nie udaje**: sprawdź log `~/lilarch.log` i upewnij się, że masz wolne miejsce na dysku oraz dostęp do internetu.
-- **Instalator przerywa z błędem o jądrze lub GRUB-ie**: to celowe zabezpieczenie, dzięki któremu nie dostaniesz systemu, który się nie uruchomi. Zgłoś issue z komunikatem błędu.
-- **Po instalacji pojawia się `grub rescue`**: zgłoś issue i dołącz treść błędu po `error:`, tryb uruchamiania (BIOS lub UEFI) oraz informację, czy to VM czy prawdziwy sprzęt.
-
----
-
-## 🤝 Współpraca
-
-Pull requesty i pomysły są mile widziane. Masz propozycję nowego motywu, środowiska lub poprawki instalatora? Otwórz issue.
+Coś nie działa lub system wpada w `grub rescue`? Otwórz issue i podaj treść błędu, tryb uruchamiania (BIOS lub UEFI) oraz czy to maszyna wirtualna czy prawdziwy sprzęt.
 
 ## 📜 Licencja
 
-Dodaj tutaj wybraną licencję (np. MIT) i plik `LICENSE`.
+Dodaj tutaj wybraną licencję (np. MIT) albo usuń tę sekcję.
 
 ---
 
 <p align="center">Zrobione z 🍭 i odrobiną 🐧</p>
 
-<sub>Słowa kluczowe / keywords: LilArch, lekka dystrybucja Linuksa, lightweight Linux distro, minimal Arch Linux, Arch-based distro, archiso, custom Arch ISO, i3wm rice, i3 window manager, tiling window manager, offline Arch installer, LilInstall, polska dystrybucja Linuksa, lekki Linux na stary komputer, Linux for old PC, BIOS UEFI installer.</sub>
+<sub>Słowa kluczowe / keywords: LilArch, lekka dystrybucja Linuksa, lightweight Linux distro, minimal Arch Linux, Arch-based distro, ISO download, live USB, i3wm, tiling window manager, offline Arch installer, LilInstall, polska dystrybucja Linuksa, lekki Linux na stary komputer, Linux for old PC, BIOS UEFI installer.</sub>
