@@ -1,0 +1,78 @@
+set $mod Mod4
+font pango:JetBrains Mono 10
+
+gaps inner 8
+gaps outer 2
+default_border pixel 2
+default_floating_border pixel 2
+
+client.focused          #ff6ec7 #14101f #ffffff #3fb4ff #ff6ec7
+client.focused_inactive #3fb4ff #14101f #d8d8d8 #14101f #14101f
+client.unfocused        #14101f #14101f #888888 #14101f #14101f
+client.urgent           #0bbfe0 #0bbfe0 #14101f #0bbfe0 #0bbfe0
+
+exec_always --no-startup-id setxkbmap pl
+exec_always --no-startup-id feh --bg-fill /usr/share/backgrounds/lilarch.png
+exec --no-startup-id picom --config ~/.config/picom.conf -b
+exec --no-startup-id xterm -e 'fastfetch; exec bash'
+
+floating_modifier $mod
+
+bindsym $mod+Return exec xterm
+bindsym $mod+d exec dmenu_run -fn 'JetBrains Mono-10' -nb '#14101f' -nf '#d8d8d8' -sb '#ff6ec7' -sf '#14101f'
+bindsym $mod+q kill
+
+bindsym $mod+h focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+bindsym $mod+Shift+h move left
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+
+bindsym $mod+b split h
+bindsym $mod+v split v
+bindsym $mod+f fullscreen toggle
+bindsym $mod+Shift+space floating toggle
+bindsym $mod+r mode "resize"
+
+mode "resize" {
+    bindsym h resize shrink width 10 px or 10 ppt
+    bindsym j resize grow height 10 px or 10 ppt
+    bindsym k resize shrink height 10 px or 10 ppt
+    bindsym l resize grow width 10 px or 10 ppt
+    bindsym Escape mode "default"
+    bindsym Return mode "default"
+}
+
+bindsym $mod+1 workspace 1
+bindsym $mod+2 workspace 2
+bindsym $mod+3 workspace 3
+bindsym $mod+4 workspace 4
+bindsym $mod+5 workspace 5
+bindsym $mod+Shift+1 move container to workspace 1
+bindsym $mod+Shift+2 move container to workspace 2
+bindsym $mod+Shift+3 move container to workspace 3
+bindsym $mod+Shift+4 move container to workspace 4
+bindsym $mod+Shift+5 move container to workspace 5
+
+bindsym $mod+Shift+r restart
+bindsym $mod+Shift+e exec --no-startup-id i3-msg exit
+bindsym $mod+Shift+p exec --no-startup-id poweroff
+bindsym $mod+Shift+b exec --no-startup-id reboot
+
+bar {
+    status_command i3status
+    position top
+    font pango:JetBrains Mono 10
+    colors {
+        background #14101f
+        statusline #d8d8d8
+        separator  #ff6ec7
+        focused_workspace  #ff6ec7 #ff6ec7 #14101f
+        active_workspace   #3fb4ff #14101f #ffffff
+        inactive_workspace #14101f #14101f #888888
+        urgent_workspace   #0bbfe0 #0bbfe0 #14101f
+    }
+}

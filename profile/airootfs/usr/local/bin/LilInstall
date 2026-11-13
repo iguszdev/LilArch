@@ -1,0 +1,181 @@
+#!/bin/bash
+# LilInstall - prosty instalator LilArch
+set -euo pipefail
+[[ $EUID -eq 0 ]] || { echo "Uruchom jako root."; exit 1; }
+
+P='\e[1;95m'; C='\e[1;96m'; N='\e[0m'
+say(){ echo -e "${P}🍭 $*${N}"; }
+ask(){ local r; read -rp "$(echo -e "${C}$1${N} ")" r; echo "${r:-$2}"; }
+die(){ echo -e "${P}❌ $*${N}"; exit 1; }
+
+clear
+echo -e "${C}   L i L   A R C H   —   instalator${N}\n"
+
+CORE=$(cat /usr/share/lilarch/core.pkgs)
+I3=$(cat /usr/share/lilarch/i3.pkgs)
+
+say "Dostępne dyski:"
+lsblk -dpno NAME,SIZE,MODEL -e 7,11
+DISK=$(ask "Na który dysk zainstalować? (np. /dev/sda):" "")
+[[ -b $DISK ]] || die "Nie ma takiego dysku."
+echo -e "${P}UWAGA: wszystko na $DISK zostanie USUNIĘTE!${N}"
+[[ $(ask "Wpisz TAK żeby kontynuować:" "") == "TAK" ]] || die "Anulowano."
+
+HN=$(ask "Nazwa komputera [lilarch]:" "lilarch")
+USERN=$(ask "Nazwa użytkownika [lil]:" "lil")
+TZ=$(ask "Strefa czasowa [Europe/Warsaw]:" "Europe/Warsaw")
+KEYMAP=$(ask "Układ klawiatury [pl]:" "pl")
+while true; do
+  read -rsp "Hasło (user i root): " PASS; echo
+  read -rsp "Powtórz hasło: " PASS2; echo
+  [[ -n $PASS && $PASS == "$PASS2" ]] && break
+  echo "Nie pasuje, jeszcze raz."
+done
+
+echo
+say "Wybierz środowisko:"
+echo "  1) i3 rice LilArch   (offline)"
+echo "  2) tylko terminal    (offline)"
+echo "  3) XFCE              (potrzebny internet)"
+echo "  4) Openbox           (potrzebny internet)"
+echo "  5) Sway (Wayland)    (potrzebny internet)"
+CH=$(ask "Numer [1]:" "1")
+case $CH in
+  1) ENVN=i3;      MODE=offline; EXTRA="$I3" ;;
+  2) ENVN=tty;     MODE=offline; EXTRA="" ;;
+  3) ENVN=xfce;    MODE=online;  EXTRA="xorg-server xorg-xinit xf86-input-libinput mesa xf86-video-vesa xterm xfce4 ttf-jetbrains-mono" ;;
+  4) ENVN=openbox; MODE=online;  EXTRA="xorg-server xorg-xinit xf86-input-libinput mesa xf86-video-vesa xterm openbox tint2 feh ttf-jetbrains-mono" ;;
+  5) ENVN=sway;    MODE=online;  EXTRA="sway foot mesa ttf-jetbrains-mono" ;;
+  *) die "Zły wybór." ;;
+esac
+
+if [[ $MODE == online ]]; then
+  ping -c1 -W3 archlinux.org >/dev/null 2>&1 || die "Brak internetu. Użyj lilwifi i spróbuj ponownie."
+fi
+
+[[ -d /sys/firmware/efi/efivars ]] && UEFI=1 || UEFI=0
+pt(){ [[ $DISK =~ [0-9]$ ]] && echo "${DISK}p$1" || echo "${DISK}$1"; }
+
+say "Partycjonuję $DISK ($([[ $UEFI == 1 ]] && echo UEFI || echo BIOS))..."
+umount -R /mnt 2>/dev/null || true
+swapoff -a 2>/dev/null || true
+wipefs -af "$DISK" >/dev/null
+dd if=/dev/zero of="$DISK" bs=1M count=4 status=none   # czyści stare MBR/GRUB
+if [[ $UEFI == 1 ]]; then
+  parted -s "$DISK" mklabel gpt \
+    mkpart ESP fat32 1MiB 513MiB set 1 esp on \
+    mkpart root ext4 513MiB 100%
+  udevadm settle; sleep 1
+  mkfs.fat -F32 "$(pt 1)"
+  mkfs.ext4 -F -L lilroot "$(pt 2)"
+  mount "$(pt 2)" /mnt
+  mkdir -p /mnt/boot
+  mount "$(pt 1)" /mnt/boot
+else
+  # BIOS: tablica MBR (msdos) + jedna partycja root - najpewniejsza wersja pod GRUB
+  parted -s "$DISK" mklabel msdos mkpart primary ext4 1MiB 100% set 1 boot on
+  udevadm settle; sleep 1
+  mkfs.ext4 -F -L lilroot "$(pt 1)"
+  mount "$(pt 1)" /mnt
+fi
+
+say "Instaluję system ($MODE)..."
+if [[ $MODE == offline ]]; then
+  cat > /tmp/lil-offline.conf <<EOF
+[options]
+Architecture = auto
+SigLevel = Never
+DisableSandbox
+
+[lilrepo]
+Server = file:///opt/lilrepo
+EOF
+  pacstrap -C /tmp/lil-offline.conf -K /mnt $CORE $EXTRA
+else
+  pacstrap -K /mnt $CORE $EXTRA
+fi
+
+[[ -f /mnt/boot/vmlinuz-linux ]]       || die "Brak jądra w /mnt/boot - pacstrap się nie udał."
+[[ -f /mnt/boot/initramfs-linux.img ]] || die "Brak initramfs - pacstrap się nie udał."
+
+genfstab -U /mnt >> /mnt/etc/fstab
+sed -i 's/\([[:space:]]\)relatime\([[:space:],]\)/\1noatime\2/' /mnt/etc/fstab
+cp /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist
+mkdir -p /mnt/usr/share/backgrounds
+cp /usr/share/backgrounds/lilarch.png /mnt/usr/share/backgrounds/
+
+# lekkość: zram zamiast swapu na dysku
+cat > /mnt/etc/systemd/zram-generator.conf <<EOF
+[zram0]
+zram-size = ram / 2
+compression-algorithm = zstd
+EOF
+echo 'vm.swappiness=100' > /mnt/etc/sysctl.d/99-lilarch.conf 2>/dev/null || { mkdir -p /mnt/etc/sysctl.d; echo 'vm.swappiness=100' > /mnt/etc/sysctl.d/99-lilarch.conf; }
+
+# GRUB: szybki start, kolorki LilArch
+sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /mnt/etc/default/grub
+sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="quiet loglevel=3"/' /mnt/etc/default/grub
+sed -i 's/^GRUB_DISTRIBUTOR=.*/GRUB_DISTRIBUTOR="LilArch"/' /mnt/etc/default/grub
+cat >> /mnt/etc/grub.d/40_custom <<'EOF'
+set menu_color_normal=light-cyan/black
+set menu_color_highlight=black/light-magenta
+set color_normal=light-cyan/black
+set color_highlight=black/light-magenta
+EOF
+
+say "Konfiguruję..."
+arch-chroot /mnt /bin/bash -e <<EOF
+ln -sf /usr/share/zoneinfo/$TZ /etc/localtime
+hwclock --systohc
+sed -i 's/^#\(en_US.UTF-8\)/\1/;s/^#\(pl_PL.UTF-8\)/\1/' /etc/locale.gen
+locale-gen
+echo LANG=en_US.UTF-8 > /etc/locale.conf
+echo KEYMAP=$KEYMAP > /etc/vconsole.conf
+echo $HN > /etc/hostname
+useradd -m -G wheel -s /bin/bash $USERN
+sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+systemctl enable iwd dhcpcd fstrim.timer
+sed -i 's/^NAME=.*/NAME="LilArch"/;s/^PRETTY_NAME=.*/PRETTY_NAME="LilArch"/' /etc/os-release
+mkinitcpio -P
+if [ $UEFI = 1 ]; then
+  grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=LilArch --removable --recheck
+else
+  grub-install --target=i386-pc --recheck $DISK
+fi
+grub-mkconfig -o /boot/grub/grub.cfg
+EOF
+
+# sprawdzenie, czy bootloader na pewno jest na miejscu
+grep -q 'vmlinuz-linux' /mnt/boot/grub/grub.cfg || die "grub.cfg nie ma wpisu z jądrem - instalacja bootloadera nie powiodła się."
+if [[ $UEFI == 1 ]]; then
+  [[ -f /mnt/boot/EFI/BOOT/BOOTX64.EFI ]] || die "Brak pliku EFI bootloadera."
+else
+  [[ -f /mnt/boot/grub/i386-pc/core.img ]] || die "Brak core.img GRUB-a."
+fi
+
+printf '%s:%s\n' "$USERN" "$PASS" | arch-chroot /mnt chpasswd
+printf '%s:%s\n' "root" "$PASS"   | arch-chroot /mnt chpasswd
+
+H=/mnt/home/$USERN
+cp /usr/share/lilarch/rice/.bashrc "$H/"
+case $ENVN in
+  i3)      cp -a /usr/share/lilarch/rice/. "$H/" ;;
+  xfce)    echo 'exec startxfce4' > "$H/.xinitrc" ;;
+  openbox) printf 'feh --bg-fill /usr/share/backgrounds/lilarch.png &\ntint2 &\nexec openbox-session\n' > "$H/.xinitrc" ;;
+esac
+rm -f "$H/.bash_profile"
+arch-chroot /mnt chown -R "$USERN:$USERN" "/home/$USERN"
+
+START="startx"; [[ $ENVN == sway ]] && START="sway"
+[[ $ENVN == tty ]] && START="(tylko terminal)"
+cat > /mnt/etc/motd <<EOF
+
+   🍭  L i L   A R C H  🐧
+   Pulpit: $START   |   Wi-Fi: iwctl   |   Info: fastfetch
+
+EOF
+
+sync
+umount -R /mnt
+echo
+say "Gotowe! Wyjmij pendrive/ISO i wpisz: reboot"

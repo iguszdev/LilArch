@@ -1,0 +1,9 @@
+#!/bin/bash
+# lilwifi - proste łączenie z Wi-Fi (iwd)
+dev=$(iwctl device list | awk '/station/ {print $1; exit}')
+[[ -n $dev ]] || { echo "Nie znaleziono karty Wi-Fi."; exit 1; }
+iwctl station "$dev" scan
+sleep 3
+iwctl station "$dev" get-networks
+read -rp "SSID: " ssid
+iwctl station "$dev" connect "$ssid"
