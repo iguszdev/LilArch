@@ -93,10 +93,6 @@ Gotowe ISO pojawi się w `~/lilarch-build/out/`. Jeśli obok skryptu położysz 
 
 Coś nie działa lub system wpada w `grub rescue`? Otwórz issue i podaj treść błędu, tryb uruchamiania (BIOS lub UEFI) oraz czy to maszyna wirtualna czy prawdziwy sprzęt.
 
-## 📜 Licencja
-
-Dodaj tutaj wybraną licencję (np. MIT) albo usuń tę sekcję.
-
 ---
 
 <p align="center">Zrobione z 🍭 i odrobiną 🐧</p>
